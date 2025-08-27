@@ -2,6 +2,24 @@
 
 A fully integrated hostel management application built with modern technologies and containerized with Docker.
 
+## 📋 Table of Contents
+
+- [🏗️ Architecture](#️-architecture)
+- [🔒 Content Security Policy (CSP) Fix](#-content-security-policy-csp-fix)
+- [🚀 Quick Start](#-quick-start)
+- [📁 Project Structure](#-project-structure)
+- [🌐 Service Communication](#-service-communication)
+- [🔧 Service Details](#-service-details)
+- [🛠️ Development Workflow](#️-development-workflow)
+- [🧶 Yarn Package Management](#-yarn-package-management)
+- [🔧 Strapi Admin Panel Configuration](#-strapi-admin-panel-configuration)
+- [🚀 Production Deployment](#-production-deployment)
+- [🔍 Useful Commands](#-useful-commands)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📚 Additional Documentation](#-additional-documentation)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+
 ## 🏗️ Architecture
 
 - **Frontend**: Astro + Tailwind CSS + shadcn/ui + Nanostores

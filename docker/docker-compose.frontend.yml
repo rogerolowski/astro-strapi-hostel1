@@ -1,0 +1,36 @@
+services:
+  # Astro Frontend
+  frontend:
+    build:
+      context: ../frontend
+      cache_from:
+        - hostel_frontend:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: hostel_frontend:latest
+    container_name: hostel_frontend
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=http://backend:8000
+      - VITE_STRAPI_URL=http://cms:1337
+    volumes:
+      - ../frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - frontend_astro_cache:/app/.astro
+      - frontend_dist:/app/dist
+    ports:
+      - "4321:4321"
+    depends_on:
+      backend:
+        condition: service_healthy
+      cms:
+        condition: service_healthy
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4321/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

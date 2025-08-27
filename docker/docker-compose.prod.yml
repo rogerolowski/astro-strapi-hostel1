@@ -1,0 +1,83 @@
+# Production override for all services
+# Adds Nginx reverse proxy and production optimizations
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: hostel_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      cms:
+        condition: service_healthy
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Production Override
+  frontend:
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - frontend_node_modules:/app/node_modules
+      - frontend_astro_cache:/app/.astro
+      - frontend_dist:/app/dist
+    # Remove source code mounting in production
+    # - ../frontend:/app
+
+  # Backend Production Override
+  backend:
+    environment:
+      - DEBUG=0
+      - NODE_ENV=production
+    volumes:
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+    # Remove source code mounting in production
+    # - ../backend:/app
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn hostel.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+
+  # CMS Production Override
+  cms:
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=1337
+      - PUBLIC_URL=http://localhost
+      - SERVER_ADMIN_URL=http://localhost/admin
+      - STRAPI_ADMIN_PATH=/admin
+      - STRAPI_ADMIN_TITLE=Hostel Management CMS
+      - STRAPI_ADMIN_DESCRIPTION=Content Management System for Hostel Management
+      - STRAPI_ADMIN_HEADLESS=false
+      - STRAPI_ADMIN_DISABLE_TELEMETRY=true
+      - STRAPI_ADMIN_AUTO_OPEN=false
+      - STRAPI_ADMIN_WATCH_IGNORE_FILES=**/config/sync/**
+    volumes:
+      - cms_uploads:/srv/app/public/uploads
+      - cms_node_modules:/srv/app/node_modules
+      - cms_cache:/srv/app/.cache
+    # Remove source code mounting in production
+    # - ../cms:/srv/app
+
+volumes:
+  nginx_logs:
+    driver: local

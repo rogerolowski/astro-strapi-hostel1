@@ -1,0 +1,108 @@
+# Dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Astro build output
+dist/
+.astro/
+
+# Strapi
+####################################################################################################
+# Strapi build output
+cms/build/
+cms/dist/
+cms/.strapi-updater.json
+
+# Strapi database files (if using SQLite locally)
+cms/.tmp/
+cms/data.db*
+
+# Generated files
+cms/types/generated/
+cms/src/api/*/content-types/**/schema.json
+cms/.strapi/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Docker
+.docker/
+
+# Database
+db/data/
+db/logs/
+postgres_data/
+
+# Redis
+redis/data/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Package manager lock files (choose one)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Build outputs
+build/
+*.tgz
+*.tar.gz
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.eslintcache
+*.tsbuildinfo

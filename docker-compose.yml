@@ -1,0 +1,80 @@
+# Root compose file that orchestrates all services
+# Uses Docker networks for service-to-service communication
+
+services:
+  # Import base infrastructure services
+  postgres:
+    extends:
+      file: ./docker/docker-compose.base.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: ./docker/docker-compose.base.yml
+      service: redis
+
+  # Import backend service
+  backend:
+    extends:
+      file: ./docker/docker-compose.backend.yml
+      service: backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Import CMS service
+  cms:
+    extends:
+      file: ./docker/docker-compose.cms.yml
+      service: cms
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Import frontend service
+  frontend:
+    extends:
+      file: ./docker/docker-compose.frontend.yml
+      service: frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+      cms:
+        condition: service_healthy
+
+# All volumes used by services
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_static:
+    driver: local
+  backend_media:
+    driver: local
+  backend_cache:
+    driver: local
+  backend_pytest_cache:
+    driver: local
+  cms_uploads:
+    driver: local
+  cms_node_modules:
+    driver: local
+  cms_cache:
+    driver: local
+  frontend_node_modules:
+    driver: local
+  frontend_astro_cache:
+    driver: local
+  frontend_dist:
+    driver: local
+
+# Network configuration - will be created automatically
+networks:
+  hostel_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

@@ -1,0 +1,63 @@
+x-build-args: &build-args
+  BUILDKIT_INLINE_CACHE: 1
+
+services:
+  # PostgreSQL Database
+  postgres:
+    build: 
+      context: ../db
+      cache_from:
+        - hostel_postgres:latest
+      args:
+        <<: *build-args
+    image: hostel_postgres:latest
+    container_name: hostel_postgres
+    environment:
+      POSTGRES_DB: hostel_db
+      POSTGRES_USER: hostel_user
+      POSTGRES_PASSWORD: hostel_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../db/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hostel_user -d hostel_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis
+  redis:
+    build:
+      context: ../redis
+      cache_from:
+        - hostel_redis:latest
+      args:
+        <<: *build-args
+    image: hostel_redis:latest
+    container_name: hostel_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

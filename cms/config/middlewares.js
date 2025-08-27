@@ -1,0 +1,42 @@
+module.exports = [
+  'strapi::errors',
+  {
+    name: 'strapi::security',
+    config: {
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: {
+          'default-src': ["'self'"],
+          'connect-src': ["'self'", 'https:', 'http://localhost:3001', 'http://localhost:1337', 'ws:', 'wss:'],
+          'img-src': ["'self'", 'data:', 'blob:', 'https:', 'http://localhost:3001'],
+          'media-src': ["'self'", 'data:', 'blob:', 'https:', 'http://localhost:3001'],
+          'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'http://localhost:3001', 'http://localhost:1337'],
+          'style-src': ["'self'", "'unsafe-inline'", 'http://localhost:3001'],
+          'font-src': ["'self'", 'https:', 'data:'],
+          'frame-src': ["'self'"],
+          'object-src': ["'none'"],
+          'base-uri': ["'self'"],
+          'form-action': ["'self'"],
+          'worker-src': ["'self'", 'blob:'],
+          'child-src': ["'self'", 'blob:'],
+        },
+        upgradeInsecureRequests: null,
+      },
+      frameguard: false,
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+      },
+      xssFilter: true,
+      poweredBy: 'Strapi <strapi.io>',
+    },
+  },
+  'strapi::cors',
+  'strapi::poweredBy',
+  'strapi::logger',
+  'strapi::query',
+  'strapi::body',
+  'strapi::session',
+  'strapi::favicon',
+  'strapi::public',
+];

@@ -1,0 +1,34 @@
+# Development override for all services
+# Enables hot reload and development features
+
+services:
+  # Frontend Development Override
+  frontend:
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    command: yarn dev --host 0.0.0.0
+
+  # Backend Development Override
+  backend:
+    environment:
+      - DEBUG=1
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - ../backend:/app
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+      - backend_cache:/app/__pycache__
+      - backend_pytest_cache:/app/.pytest_cache
+
+  # CMS Development Override
+  cms:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../cms:/srv/app
+      - cms_uploads:/srv/app/public/uploads
+      - cms_node_modules:/srv/app/node_modules
+      - cms_cache:/srv/app/.cache

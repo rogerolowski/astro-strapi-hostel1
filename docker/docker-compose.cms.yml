@@ -1,0 +1,56 @@
+services:
+  # Strapi CMS
+  cms:
+    build:
+      context: ../cms
+      cache_from:
+        - hostel_cms:latest
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: hostel_cms:latest
+    container_name: hostel_cms
+    environment:
+      - DATABASE_CLIENT=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=strapi_db
+      - DATABASE_USERNAME=strapi_user
+      - DATABASE_PASSWORD=strapi_password
+      - DATABASE_SSL=false
+      - JWT_SECRET=your-jwt-secret-here-change-in-production
+      - ADMIN_JWT_SECRET=your-admin-jwt-secret-here-change-in-production
+      - APP_KEYS=your-app-keys-here-change-in-production
+      - API_TOKEN_SALT=your-api-token-salt-here-change-in-production
+      - TRANSFER_TOKEN_SALT=your-transfer-token-salt-here-change-in-production
+      - NODE_ENV=development
+      - STRAPI_TELEMETRY_DISABLED=true
+      - HOST=0.0.0.0
+      - PORT=1337
+      - PUBLIC_URL=http://localhost:3001
+      - SERVER_ADMIN_URL=http://localhost:3001/admin
+      - STRAPI_ADMIN_PATH=/admin
+      - STRAPI_ADMIN_TITLE=Hostel Management CMS
+      - STRAPI_ADMIN_DESCRIPTION=Content Management System for Hostel Management
+      - STRAPI_ADMIN_HEADLESS=false
+      - STRAPI_ADMIN_DISABLE_TELEMETRY=true
+      - STRAPI_ADMIN_AUTO_OPEN=false
+      - STRAPI_ADMIN_WATCH_IGNORE_FILES=**/config/sync/**
+    volumes:
+      - ../cms:/srv/app
+      - cms_uploads:/srv/app/public/uploads
+      - cms_node_modules:/srv/app/node_modules
+      - cms_cache:/srv/app/.cache
+    ports:
+      - "3001:1337"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1337/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

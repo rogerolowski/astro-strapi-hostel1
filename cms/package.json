@@ -1,0 +1,30 @@
+{
+  "name": "hostel-cms",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Hostel Management CMS built with Strapi",
+  "scripts": {
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "build": "strapi build",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@strapi/strapi": "4.15.0",
+    "@strapi/plugin-users-permissions": "4.15.0",
+    "@strapi/plugin-i18n": "4.15.0",
+    "better-sqlite3": "8.6.0",
+    "pg": "^8.8.0"
+  },
+  "author": {
+    "name": "Hostel Management Team"
+  },
+  "strapi": {
+    "uuid": "hostel-cms-uuid"
+  },
+  "engines": {
+    "node": ">=18.0.0 <=20.x.x",
+    "yarn": ">=1.22.0"
+  },
+  "license": "MIT"
+}

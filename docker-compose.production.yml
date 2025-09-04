@@ -1,0 +1,379 @@
+# Production Docker Compose for Contabo Server Deployment
+# Uses OpenResty instead of standard Nginx
+# Optimized for production environment with security and performance
+
+version: '3.8'
+
+services:
+  # Production OpenResty Reverse Proxy
+  openresty:
+    image: openresty/openresty:1.25.3.1-0-alpine-fat
+    container_name: hostel_openresty_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./openresty/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ./openresty/conf.d:/etc/nginx/conf.d:ro
+      - ./openresty/lua:/usr/local/openresty/nginx/lua:ro
+      - ./openresty/ssl:/etc/nginx/ssl:ro
+      - backend_static:/var/www/static:ro
+      - cms_uploads:/var/www/uploads:ro
+      - openresty_logs:/usr/local/openresty/nginx/logs
+    networks:
+      - hostel_network
+    environment:
+      - HOSTEL_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - frontend
+      - backend
+      - cms
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # PostgreSQL Production Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: hostel_postgres_prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hostel_db}
+      POSTGRES_USER: ${POSTGRES_USER:-hostel_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/postgresql.prod.conf:/etc/postgresql/postgresql.conf:ro
+      - postgres_logs:/var/log/postgresql
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hostel_user} -d ${POSTGRES_DB:-hostel_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    shm_size: 256mb
+
+  # Redis Production Cache
+  redis:
+    image: redis:7-alpine
+    container_name: hostel_redis_prod
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - redis_data_prod:/data
+      - ./redis/redis.prod.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_logs:/var/log/redis
+    networks:
+      - hostel_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Django Backend Production
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: hostel_backend:${IMAGE_TAG:-latest}
+    container_name: hostel_backend_prod
+    environment:
+      - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=hostel_management.settings.production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-hostel_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hostel_db}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${DJANGO_SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost,https://localhost}
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-False}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-False}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-False}
+    volumes:
+      - backend_static:/app/static
+      - backend_media:/app/media
+      - backend_logs:/app/logs
+    networks:
+      - hostel_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "manage.py", "check", "--deploy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Strapi CMS Production
+  cms:
+    build:
+      context: ./cms
+      dockerfile: Dockerfile.prod
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: hostel_cms:${IMAGE_TAG:-latest}
+    container_name: hostel_cms_prod
+    environment:
+      - NODE_ENV=production
+      - DATABASE_CLIENT=postgres
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-hostel_db}
+      - DATABASE_USERNAME=${POSTGRES_USER:-hostel_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_SECRET=${STRAPI_JWT_SECRET}
+      - ADMIN_JWT_SECRET=${STRAPI_ADMIN_JWT_SECRET}
+      - APP_KEYS=${STRAPI_APP_KEYS}
+      - API_TOKEN_SALT=${STRAPI_API_TOKEN_SALT}
+      - TRANSFER_TOKEN_SALT=${STRAPI_TRANSFER_TOKEN_SALT}
+      - PUBLIC_URL=${PUBLIC_URL:-http://localhost}
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=1337
+      - STRAPI_DISABLE_UPDATE_NOTIFICATION=true
+      - STRAPI_HIDE_STARTUP_MESSAGE=true
+    volumes:
+      - cms_uploads:/app/public/uploads
+      - cms_logs:/app/logs
+    networks:
+      - hostel_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1337/_health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Astro Frontend Production
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    image: hostel_frontend:${IMAGE_TAG:-latest}
+    container_name: hostel_frontend_prod
+    environment:
+      - NODE_ENV=production
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost/api}
+      - PUBLIC_CMS_URL=${PUBLIC_CMS_URL:-http://localhost/strapi}
+      - HOST=0.0.0.0
+      - PORT=4321
+    volumes:
+      - frontend_logs:/app/logs
+    networks:
+      - hostel_network
+    depends_on:
+      - backend
+      - cms
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4321/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: hostel_backup_prod
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-hostel_db}
+      - POSTGRES_USER=${POSTGRES_USER:-hostel_user}
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Daily at 2 AM
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - ./scripts/backup.sh:/backup.sh:ro
+      - backup_data:/backups
+      - postgres_data_prod:/var/lib/postgresql/data:ro
+    networks:
+      - hostel_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    command: sh -c "crond && tail -f /dev/null"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Monitoring with Watchtower (Auto-updates)
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: hostel_watchtower_prod
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_SCHEDULE=${WATCHTOWER_SCHEDULE:-0 0 4 * * *}  # Daily at 4 AM
+      - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS:-email}
+      - WATCHTOWER_NOTIFICATION_EMAIL_FROM=${WATCHTOWER_EMAIL_FROM}
+      - WATCHTOWER_NOTIFICATION_EMAIL_TO=${WATCHTOWER_EMAIL_TO}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=${WATCHTOWER_EMAIL_SERVER}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=${WATCHTOWER_EMAIL_PORT:-587}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=${WATCHTOWER_EMAIL_USER}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${WATCHTOWER_EMAIL_PASSWORD}
+      - TZ=${TZ:-UTC}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+        reservations:
+          memory: 64M
+          cpus: '0.05'
+
+volumes:
+  postgres_data_prod:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/docker/volumes/hostel_postgres_data/_data
+  redis_data_prod:
+    driver: local
+  backend_static:
+    driver: local
+  backend_media:
+    driver: local
+  backend_logs:
+    driver: local
+  cms_uploads:
+    driver: local
+  cms_logs:
+    driver: local
+  frontend_logs:
+    driver: local
+  openresty_logs:
+    driver: local
+  postgres_logs:
+    driver: local
+  redis_logs:
+    driver: local
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/backups
+
+networks:
+  hostel_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
+    driver_opts:
+      com.docker.network.bridge.name: hostel_prod_br0
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.enable_icc: "true"

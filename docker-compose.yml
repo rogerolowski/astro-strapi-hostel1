@@ -44,6 +44,21 @@ services:
       cms:
         condition: service_healthy
 
+  # Database management tool
+  adminer:
+    image: adminer:4.8.1
+    container_name: hostel_adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - hostel_network
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 # All volumes used by services
 volumes:
   postgres_data:

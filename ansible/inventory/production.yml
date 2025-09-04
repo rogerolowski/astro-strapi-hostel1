@@ -1,0 +1,54 @@
+---
+# Production inventory for Contabo servers
+production:
+  hosts:
+    contabo-hostel-1:
+      ansible_host: YOUR_CONTABO_SERVER_IP  # Replace with your Contabo server IP
+      ansible_port: 22
+      ansible_user: root
+      ansible_ssh_private_key_file: ~/.ssh/id_rsa  # Path to your SSH private key
+      
+      # Server specifications (adjust according to your Contabo plan)
+      server_specs:
+        cpu_cores: 4
+        memory_gb: 8
+        disk_gb: 200
+        
+      # Application configuration
+      app_config:
+        domain: your-domain.com  # Replace with your domain
+        email: admin@your-domain.com  # Replace with your email
+        timezone: Europe/Berlin  # Adjust to your timezone
+        
+  vars:
+    # Environment
+    env: production
+    
+    # Docker configuration
+    docker_edition: ce
+    docker_package: docker-{{ docker_edition }}
+    docker_package_state: present
+    docker_compose_version: "v2.21.0"
+    
+    # Application settings
+    app_name: hostel-management
+    app_user: hostel
+    app_group: hostel
+    app_directory: /opt/hostel-management
+    
+    # Network settings
+    http_port: 80
+    https_port: 443
+    
+    # Backup settings
+    backup_retention_days: 30
+    backup_schedule: "0 2 * * *"  # Daily at 2 AM
+    
+    # Monitoring
+    enable_monitoring: true
+    log_retention_days: 7
+    
+    # Security settings
+    firewall_enabled: true
+    fail2ban_enabled: true
+    auto_updates_enabled: true

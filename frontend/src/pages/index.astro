@@ -1,43 +1,17 @@
 ---
-import Layout from '../layouts/Layout.astro';
+// Astro page component
 ---
 
-<Layout title="Welcome to Hostel Management System">
-  <div class="text-center">
-    <h1 class="text-4xl font-bold text-gray-900 mb-4">
-      Welcome to Hostel Management System
-    </h1>
-    <p class="text-xl text-gray-600 mb-8">
-      Manage your hostel operations efficiently with our comprehensive system
-    </p>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <div class="text-3xl mb-4">🏠</div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Room Management</h3>
-        <p class="text-gray-600">Easily manage room availability, types, and pricing</p>
-      </div>
-      
-      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <div class="text-3xl mb-4">📅</div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">Booking System</h3>
-        <p class="text-gray-600">Streamlined booking process for guests and staff</p>
-      </div>
-      
-      <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-        <div class="text-3xl mb-4">👥</div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
-        <p class="text-gray-600">Secure authentication and user profile management</p>
-      </div>
-    </div>
-    
-    <div class="mt-12">
-      <a 
-        href="/rooms" 
-        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
-      >
-        Get Started
-      </a>
-    </div>
-  </div>
-</Layout>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Hostel Management</title>
+  </head>
+  <body>
+    <h1>Welcome to Hostel Management</h1>
+    <p>Frontend is working!</p>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+---
+alwaysApply: true
+---
+
+# Astro-Strapi Hotel Booking System Rules
+
+This is an Astro-Strapi hotel booking system with the following requirements:
+
+## Architecture & Authentication
+- Use the existing authentication flow with Django backend
+- Follow the established API patterns in /api/ endpoints
+- Maintain consistency with existing Tailwind component styles
+- Use the Docker compose setup for all development work
+
+## Development Guidelines
+- All services must run through Docker Compose
+- Frontend: Astro with React components
+- CMS: Strapi for content management
+- Backend: Django DRF for authentication and API
+- Database: PostgreSQL with Redis for caching
+- Use Yarn as the package manager for Node.js projects
+- Follow the modular Docker Compose structure in /docker/ folder

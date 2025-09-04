@@ -1,19 +1,20 @@
 # Production override for all services
-# Adds Nginx reverse proxy and production optimizations
+# Adds OpenResty reverse proxy and production optimizations
 
 services:
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: hostel_nginx
+  # OpenResty Reverse Proxy
+  openresty:
+    image: openresty/openresty:alpine
+    container_name: hostel_openresty
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../nginx/conf.d:/etc/nginx/conf.d:ro
-      - ../nginx/ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
+      - ../openresty/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
+      - ../openresty/conf.d:/etc/nginx/conf.d:ro
+      - ../openresty/lua:/usr/local/openresty/nginx/lua:ro
+      - ../openresty/ssl:/etc/ssl/certs:ro
+      - openresty_logs:/usr/local/openresty/nginx/logs
     depends_on:
       frontend:
         condition: service_healthy
@@ -24,6 +25,8 @@ services:
     networks:
       - hostel_network
     restart: unless-stopped
+    environment:
+      - HOSTEL_ENV=production
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
@@ -79,5 +82,5 @@ services:
     # - ../cms:/srv/app
 
 volumes:
-  nginx_logs:
+  openresty_logs:
     driver: local
